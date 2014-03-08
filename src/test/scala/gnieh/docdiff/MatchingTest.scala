@@ -33,21 +33,21 @@ class MatchingTest extends FunSuite with ShouldMatchers {
 
   test("compute matching") {
     val expected = Set(
-      (a1, a2),
-      (c1, c2),
-      (d1, d2),
-      (e1, e2),
-      (f1, f2),
-      (p11, p12),
-      (p21, p32),
-      (p31, p22),
-      (doc1, doc2)
+      (a1, a1.parent, a2, a2.parent),
+      (c1, c1.parent, c2, c2.parent),
+      (d1, d1.parent, d2, d2.parent),
+      (e1, e1.parent, e2, e2.parent),
+      (f1, f1.parent, f2, f2.parent),
+      (p11, p11.parent, p12, p12.parent),
+      (p21, p21.parent, p32, p32.parent),
+      (p31, p31.parent, p22, p22.parent),
+      (doc1, doc1.parent, doc2, doc2.parent)
     )
     val matcher = new LevenshteinMatcher(0.5, 0.5)
 
     val output = matcher.compute(doc1, doc2)
 
-    output should be(expected)
+    output.map { case (n1, n2) => (n1, n1.parent, n2, n2.parent) } should be(expected)
 
   }
 
