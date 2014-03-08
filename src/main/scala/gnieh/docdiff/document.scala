@@ -17,7 +17,7 @@ package gnieh.docdiff
 
 sealed trait Node extends Ordered[Node] {
 
-  var parent: Option[Node]
+  protected[docdiff] var parent: Option[Node]
 
   /** Indicates whether this node contains this sentence */
   def contains(sentence: Sentence): Boolean
@@ -50,7 +50,7 @@ sealed abstract class InternalNode extends Node {
 }
 
 final case class Document(children: List[Node]) extends InternalNode {
-  var parent: Option[Node] = None
+  protected[docdiff] var parent: Option[Node] = None
   def compare(that: Node) = that match {
     case Document(_) => 0
     case _           => 1
@@ -63,7 +63,7 @@ final case class Document(children: List[Node]) extends InternalNode {
 
 final case class Title(level: Int, name: Sentence, children: List[Node]) extends InternalNode {
 
-  var parent: Option[Node] = None
+  protected[docdiff] var parent: Option[Node] = None
 
   def compare(that: Node) = that match {
     case Title(thatLevel, _, _) => this.level - thatLevel
@@ -78,7 +78,7 @@ final case class Title(level: Int, name: Sentence, children: List[Node]) extends
 
 final case class Paragraph(children: List[Node]) extends InternalNode {
 
-  var parent: Option[Node] = None
+  protected[docdiff] var parent: Option[Node] = None
 
   def compare(that: Node) = that match {
     case Paragraph(_)                    => 0
@@ -93,7 +93,7 @@ final case class Paragraph(children: List[Node]) extends InternalNode {
 
 final case class Enumerated(numbered: Boolean, children: List[Node]) extends InternalNode {
 
-  var parent: Option[Node] = None
+  protected[docdiff] var parent: Option[Node] = None
 
   def compare(that: Node) = that match {
     case Enumerated(_, _) => 0
@@ -108,7 +108,7 @@ final case class Enumerated(numbered: Boolean, children: List[Node]) extends Int
 
 final case class Sentence(content: String) extends Node {
 
-  var parent: Option[Node] = None
+  protected[docdiff] var parent: Option[Node] = None
 
   def compare(that: Node) = that match {
     case Sentence(_) => 0
