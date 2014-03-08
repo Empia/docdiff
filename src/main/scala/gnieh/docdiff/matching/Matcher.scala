@@ -42,7 +42,7 @@ abstract class Matcher(f: Double, t: Double) {
       case n1 @ Sentence(s1) =>
         val matching = tree2.find {
           case n2 @ Sentence(s2) =>
-            !matched2.contains(n2) && distance(s1, s2) <= f
+            !matched2.contains(n2) && (distance(s1, s2).toDouble / math.max(s1.length, s2.length) <= f)
           case _ =>
             false
         }
