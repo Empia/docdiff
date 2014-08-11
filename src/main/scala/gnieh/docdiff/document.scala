@@ -28,6 +28,9 @@ sealed trait Node extends Ordered[Node] {
   /** Returns the number of leaves for this node */
   def size: Int
 
+  /** Returns the ordered list of node of type `lbl` in the same order they appear in the document */
+  def chain(lbl: Node): List[Node]
+
 }
 
 sealed abstract class InternalNode extends Node {
@@ -42,7 +45,7 @@ sealed abstract class InternalNode extends Node {
       case Nil =>
         None
     }
-    aux(children).orElse(if(f(this)) Some(this) else None)
+    aux(children).orElse(if (f(this)) Some(this) else None)
   }
 
   def size = children.map(_.size).sum
@@ -59,6 +62,16 @@ final case class Document(children: List[Node]) extends InternalNode {
   def contains(sentence: Sentence) =
     children.exists(_.contains(sentence))
 
+  def chain(lbl: Node): List[Node] =
+    lbl match {
+      case Document(_) =>
+        this :: children.flatMap(_.chain(lbl))
+      case _ if lbl <= this =>
+        children.flatMap(_.chain(lbl))
+      case _ =>
+        Nil
+    }
+
 }
 
 final case class Title(level: Int, name: Sentence, children: List[Node]) extends InternalNode {
@@ -66,13 +79,23 @@ final case class Title(level: Int, name: Sentence, children: List[Node]) extends
   protected[docdiff] var parent: Option[Node] = None
 
   def compare(that: Node) = that match {
-    case Title(thatLevel, _, _) => this.level - thatLevel
+    case Title(thatLevel, _, _) => thatLevel - this.level
     case Document(_)            => -1
     case _                      => 1
   }
 
   def contains(sentence: Sentence) =
     name == sentence || children.exists(_.contains(sentence))
+
+  def chain(lbl: Node): List[Node] =
+    lbl match {
+      case Title(lvl, _, _) if lvl == level =>
+        this :: children.flatMap(_.chain(lbl))
+      case _ if lbl <= this =>
+        children.flatMap(_.chain(lbl))
+      case _ =>
+        Nil
+    }
 
 }
 
@@ -81,13 +104,23 @@ final case class Paragraph(children: List[Node]) extends InternalNode {
   protected[docdiff] var parent: Option[Node] = None
 
   def compare(that: Node) = that match {
-    case Paragraph(_)                    => 0
-    case Sentence(_) | Enumerated(_, _)  => 1
-    case _                               => -1
+    case Paragraph(_)                   => 0
+    case Sentence(_) | Enumerated(_, _) => 1
+    case _                              => -1
   }
 
   def contains(sentence: Sentence) =
     children.exists(_.contains(sentence))
+
+  def chain(lbl: Node): List[Node] =
+    lbl match {
+      case Paragraph(_) =>
+        this :: children.flatMap(_.chain(lbl))
+      case _ if lbl <= this =>
+        children.flatMap(_.chain(lbl))
+      case _ =>
+        Nil
+    }
 
 }
 
@@ -104,6 +137,16 @@ final case class Enumerated(numbered: Boolean, children: List[Node]) extends Int
   def contains(sentence: Sentence) =
     children.exists(_.contains(sentence))
 
+  def chain(lbl: Node): List[Node] =
+    lbl match {
+      case Enumerated(_, _) =>
+        this :: children.flatMap(_.chain(lbl))
+      case _ if lbl <= this =>
+        children.flatMap(_.chain(lbl))
+      case _ =>
+        Nil
+    }
+
 }
 
 final case class Sentence(content: String) extends Node {
@@ -119,12 +162,17 @@ final case class Sentence(content: String) extends Node {
     sentence == this
 
   def find(f: Node => Boolean): Option[Node] =
-    if(f(this))
+    if (f(this))
       Some(this)
     else
       None
 
   def size = 1
+
+  def chain(lbl: Node): List[Node] = lbl match {
+    case Sentence(_) => List(this)
+    case _           => Nil
+  }
 
 }
 
