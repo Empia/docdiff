@@ -15,10 +15,12 @@
 */
 package gnieh.docdiff
 
-class Diff {
+import matching._
+
+class Diff(matcher: Matcher) {
 
   def matching(doc1: Document, doc2: Document): Set[(Node, Node)] =
-    ???
+    matcher.compute(doc1, doc2)
 
 }
 
