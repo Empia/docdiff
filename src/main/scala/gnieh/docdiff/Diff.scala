@@ -23,4 +23,3 @@ class Diff(matcher: Matcher) {
     matcher.compute(doc1, doc2)
 
 }
-
