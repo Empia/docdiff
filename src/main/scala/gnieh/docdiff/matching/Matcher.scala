@@ -16,29 +16,29 @@
 package gnieh.docdiff
 package matching
 
-abstract class Matcher(f: Double, t: Double) {
+abstract class Matcher[Annotation](f: Double, t: Double) {
 
   /** Computes the distance between two strings */
   def distance(str1: String, str2: String): Int
 
   /** Compute a matching between two documents */
-  def compute(doc1: TextualConstituent, doc2: TextualConstituent): Set[(TextualConstituent, TextualConstituent)] =
+  def compute(doc1: TextualConstituent[Annotation], doc2: TextualConstituent[Annotation]): Set[(TextualConstituent[Annotation], TextualConstituent[Annotation])] =
     compute(doc1, doc2, Set(), Set())._1
 
   /* common matching nodes */
-  private def common(matching: Set[(TextualConstituent, TextualConstituent)], n1: TextualConstituent, n2: TextualConstituent): Set[(TextualConstituent, TextualConstituent)] =
+  private def common(matching: Set[(TextualConstituent[Annotation], TextualConstituent[Annotation])], n1: TextualConstituent[Annotation], n2: TextualConstituent[Annotation]): Set[(TextualConstituent[Annotation], TextualConstituent[Annotation])] =
     matching.filter {
-      case (sn1: LeafConstituent, sn2: LeafConstituent) =>
+      case (sn1: LeafConstituent[Annotation], sn2: LeafConstituent[Annotation]) =>
         n1.contains(sn1) && n2.contains(sn2)
       case _ =>
         false
     }
 
   private def compute(
-    tree1: TextualConstituent,
-    tree2: TextualConstituent,
-    matched2: Set[TextualConstituent],
-    acc: Set[(TextualConstituent, TextualConstituent)]): (Set[(TextualConstituent, TextualConstituent)], Set[TextualConstituent]) = tree1 match {
+    tree1: TextualConstituent[Annotation],
+    tree2: TextualConstituent[Annotation],
+    matched2: Set[TextualConstituent[Annotation]],
+    acc: Set[(TextualConstituent[Annotation], TextualConstituent[Annotation])]): (Set[(TextualConstituent[Annotation], TextualConstituent[Annotation])], Set[TextualConstituent[Annotation]]) = tree1 match {
       case n1 @ LeafConstituent(_, _, _, s1) =>
         val matching = tree2.find {
           case n2 @ LeafConstituent(_, _, _, s2) =>
@@ -55,7 +55,7 @@ abstract class Matcher(f: Double, t: Double) {
             (acc, matched2)
         }
 
-      case n1: InternalConstituent =>
+      case n1: InternalConstituent[Annotation] =>
         // bottom-up traversal
         val (newAcc, newMatched2) = n1.children.foldLeft((acc, matched2)) {
           case ((acc, matched2), n) =>
@@ -73,10 +73,10 @@ abstract class Matcher(f: Double, t: Double) {
     }
 
     private def findInternalMatch(
-      node: InternalConstituent,
-      tree2: TextualConstituent,
-      acc: Set[(TextualConstituent, TextualConstituent)],
-      matched2: Set[TextualConstituent]): Option[TextualConstituent] = node match {
+      node: InternalConstituent[Annotation],
+      tree2: TextualConstituent[Annotation],
+      acc: Set[(TextualConstituent[Annotation], TextualConstituent[Annotation])],
+      matched2: Set[TextualConstituent[Annotation]]): Option[TextualConstituent[Annotation]] = node match {
         case n1 @ InternalConstituent(level1, _, name1, _) =>
           tree2.find {
             case n2 @ InternalConstituent(level2, _, name2, _) if level1 == level2 && name1 == name2 =>

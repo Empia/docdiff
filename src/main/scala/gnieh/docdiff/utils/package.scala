@@ -1,5 +1,5 @@
 /*
-* Copyright (c) 2015 Lucas Satabin
+* Copyright (c) 2016 Lucas Satabin
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -15,11 +15,28 @@
 */
 package gnieh.docdiff
 
-import matching._
+package object utils {
 
-class Diff[Annotation](matcher: Matcher[Annotation]) {
+  type Interval[V] = (Int, Int, V)
 
-  def matching(doc1: TextualConstituent[Annotation], doc2: TextualConstituent[Annotation]): Set[(TextualConstituent[Annotation], TextualConstituent[Annotation])] =
-    matcher.compute(doc1, doc2)
+  implicit class IntervalOps[V](val i: Interval[V]) extends AnyVal {
+
+    @inline
+    def contains(point: Int): Boolean =
+      i._1 <= point && point <= i._2
+
+    @inline
+    def overlaps[U](j: Interval[U]): Boolean =
+      j._1 <= i._2 && j._2 >= i._1
+
+    @inline
+    def overlaps(j: (Int, Int)): Boolean =
+      j._1 <= i._2 && j._2 >= i._1
+
+    @inline
+    def intersection(j: (Int, Int)): Interval[V] =
+      (math.max(i._1, j._1), math.min(i._2, j._2), i._3)
+
+  }
 
 }

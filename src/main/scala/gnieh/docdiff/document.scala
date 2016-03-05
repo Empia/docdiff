@@ -15,36 +15,41 @@
 */
 package gnieh.docdiff
 
-import utils.TrieMap
+import utils.{
+  TrieMap,
+  IntervalTree
+}
 
 import scala.annotation.tailrec
 
-final case class Document(metadata: TrieMap[String, Metadata], text: TextualConstituent)
+final case class Document[Metadata, Annotation](metadata: TrieMap[String, Metadata], text: TextualConstituent[Annotation])
 
-sealed abstract class TextualConstituent {
+sealed abstract class TextualConstituent[Annotation] {
   val level: Int
   val indentation: Int
   val name: String
 
-  def find(p: TextualConstituent => Boolean): Option[TextualConstituent]
+  def find(p: TextualConstituent[Annotation] => Boolean): Option[TextualConstituent[Annotation]]
 
-  def contains(l: LeafConstituent): Boolean
+  def contains(l: LeafConstituent[Annotation]): Boolean
 
   def size: Int
 
 }
 
-final case class InternalConstituent(level: Int, indentation: Int, name: String, children: Vector[TextualConstituent]) extends TextualConstituent {
+final case class InternalConstituent[Annotation](level: Int, indentation: Int, name: String, children: Vector[TextualConstituent[Annotation]]) extends TextualConstituent[Annotation] {
 
-  def add(child: TextualConstituent): InternalConstituent = {
+  assert(children.forall(child => child.level == this.level - 1 || child.indentation == this.indentation + 1))
+
+  def add(child: TextualConstituent[Annotation]): InternalConstituent[Annotation] = {
     // a child must be either at the direct sub-level or at the direct next indentation
     assert(child.level == this.level - 1 || child.indentation == this.indentation + 1)
     copy(children = children :+ child)
   }
 
-  def find(f: TextualConstituent => Boolean): Option[TextualConstituent] = {
+  def find(f: TextualConstituent[Annotation] => Boolean): Option[TextualConstituent[Annotation]] = {
     @tailrec
-    def aux(idx: Int): Option[TextualConstituent] =
+    def aux(idx: Int): Option[TextualConstituent[Annotation]] =
       if(idx >= children.size)
         None
       else
@@ -55,26 +60,24 @@ final case class InternalConstituent(level: Int, indentation: Int, name: String,
     aux(0).orElse(if (f(this)) Some(this) else None)
   }
 
-  def contains(leaf: LeafConstituent) =
+  def contains(leaf: LeafConstituent[Annotation]) =
     children.exists(_.contains(leaf))
 
   def size = children.map(_.size).sum
 
 }
 
-final case class LeafConstituent(level: Int, indentation: Int, name: String, content: String) extends TextualConstituent {
+final case class LeafConstituent[Annotation](level: Int, indentation: Int, name: String, content: String)(val annotations: IntervalTree[Annotation] = IntervalTree.empty[Annotation]) extends TextualConstituent[Annotation] {
 
-  def find(f: TextualConstituent => Boolean): Option[TextualConstituent] =
+  def find(f: TextualConstituent[Annotation] => Boolean): Option[TextualConstituent[Annotation]] =
     if (f(this))
       Some(this)
     else
       None
 
-  def contains(leaf: LeafConstituent) =
+  def contains(leaf: LeafConstituent[Annotation]) =
     leaf.level == this.level && leaf.name == this.name && leaf.content == this.content
 
   val size = 1
 
 }
-
-trait Metadata

@@ -15,13 +15,13 @@
 */
 package gnieh.docdiff
 
-sealed trait Action
+sealed trait Action[Annotation]
 
-final case class Insert(node: TextualConstituent, father: InternalConstituent, position: Int) extends Action
+final case class Insert[Annotation](node: TextualConstituent[Annotation], father: InternalConstituent[Annotation], position: Int) extends Action[Annotation]
 
-final case class Delete(node: TextualConstituent) extends Action
+final case class Delete[Annotation](node: TextualConstituent[Annotation]) extends Action[Annotation]
 
-final case class Update(node: TextualConstituent, element: TextualConstituent) extends Action
+final case class Update[Annotation](node: TextualConstituent[Annotation], element: TextualConstituent[Annotation]) extends Action[Annotation]
 
-final case class Move(node: TextualConstituent, father: InternalConstituent, position: Int) extends Action
+final case class Move[Annotation](node: TextualConstituent[Annotation], father: InternalConstituent[Annotation], position: Int) extends Action[Annotation]
 

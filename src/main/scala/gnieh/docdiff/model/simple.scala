@@ -16,17 +16,17 @@
 package gnieh.docdiff
 package model
 
-class Simple(val headings: Int) {
+class Simple[Annotation](val headings: Int) {
 
   object Body {
-    def apply(content: Vector[TextualConstituent]): InternalConstituent =
-      InternalConstituent(0, 0, "body", content)
+    def apply(content: Vector[TextualConstituent[Annotation]]): InternalConstituent[Annotation] =
+      InternalConstituent(headings + 2, 0, "body", content)
   }
 
   object Heading {
-    def unapply(c: TextualConstituent): Option[Int] =
+    def unapply(c: TextualConstituent[Annotation]): Option[Int] =
       c match {
-        case InternalConstituent(level, _, "title", _) if level < headings =>
+        case InternalConstituent(level, _, "title", _) if level >= 2 && level < headings + 1 =>
           Some(level)
         case _ =>
           None
@@ -34,10 +34,10 @@ class Simple(val headings: Int) {
   }
 
   object Paragraph {
-    def apply(text: Vector[TextualConstituent])(implicit indent: Int): InternalConstituent =
-      InternalConstituent(headings + 2, indent, "paragraph", text)
+    def apply(text: Vector[TextualConstituent[Annotation]])(implicit indent: Int): InternalConstituent[Annotation] =
+      InternalConstituent(1, indent, "paragraph", text)
 
-    def unapply(c: TextualConstituent): Option[Vector[TextualConstituent]] =
+    def unapply(c: TextualConstituent[Annotation]): Option[Vector[TextualConstituent[Annotation]]] =
       c match {
         case InternalConstituent(_, _, "paragraph", children) =>
           Some(children)
@@ -47,10 +47,10 @@ class Simple(val headings: Int) {
   }
 
   object Sentence {
-    def apply(text: String)(implicit indent: Int): LeafConstituent =
-      LeafConstituent(headings + 3, indent, "sentence", text)
+    def apply(text: String)(implicit indent: Int): LeafConstituent[Annotation] =
+      LeafConstituent(0, indent, "sentence", text)()
 
-    def unapply(c: TextualConstituent): Option[String] =
+    def unapply(c: TextualConstituent[Annotation]): Option[String] =
       c match {
         case LeafConstituent(_, _, "sentence", text) =>
           Some(text)

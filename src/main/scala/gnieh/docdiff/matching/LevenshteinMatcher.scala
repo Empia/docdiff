@@ -21,7 +21,7 @@ package matching
  *
  *  @author Lucas Satabin
  */
-class LevenshteinMatcher(f: Double, t: Double) extends Matcher(f, t) {
+class LevenshteinMatcher[Annotation](f: Double, t: Double) extends Matcher[Annotation](f, t) {
 
   def distance(str1: String, str2: String): Int =
     (str1, str2) match {
