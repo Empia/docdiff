@@ -47,7 +47,8 @@ class MatchingTest extends FunSuite with ShouldMatchers {
       (f1, f2),
       (p11, p12),
       (p21, p32),
-      (p31, p22)
+      (p31, p22),
+      (doc1, doc2)
     )
     val matcher = new LevenshteinMatcher(0.5, 0.5)
 

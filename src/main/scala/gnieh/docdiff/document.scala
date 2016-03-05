@@ -71,7 +71,7 @@ final case class LeafConstituent(level: Int, indentation: Int, name: String, con
       None
 
   def contains(leaf: LeafConstituent) =
-    leaf == this
+    leaf.level == this.level && leaf.name == this.name && leaf.content == this.content
 
   val size = 1
 
