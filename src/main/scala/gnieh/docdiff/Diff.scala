@@ -19,7 +19,7 @@ import matching._
 
 class Diff(matcher: Matcher) {
 
-  def matching(doc1: Document, doc2: Document): Set[(Node, Node)] =
+  def matching(doc1: TextualConstituent, doc2: TextualConstituent): Set[(TextualConstituent, TextualConstituent)] =
     matcher.compute(doc1, doc2)
 
 }

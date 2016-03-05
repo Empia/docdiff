@@ -1,9 +1,16 @@
 package gnieh.docdiff
 package matching
 
+import model.Simple
+
 import org.scalatest._
 
 class MatchingTest extends FunSuite with ShouldMatchers {
+
+  val model = new Simple(0)
+  import model._
+
+  implicit val indent = 0
 
   val a1 = Sentence("a")
   val b1 = Sentence("b")
@@ -12,9 +19,9 @@ class MatchingTest extends FunSuite with ShouldMatchers {
   val e1 = Sentence("e")
   val f1 = Sentence("f")
 
-  val p11 = Paragraph(List(a1, b1, c1))
-  val p21 = Paragraph(List(d1, e1))
-  val p31 = Paragraph(List(f1))
+  val p11 = Paragraph(Vector(a1, b1, c1))
+  val p21 = Paragraph(Vector(d1, e1))
+  val p31 = Paragraph(Vector(f1))
 
   val a2 = Sentence("a")
   val c2 = Sentence("c")
@@ -23,31 +30,30 @@ class MatchingTest extends FunSuite with ShouldMatchers {
   val f2 = Sentence("f")
   val g2 = Sentence("g")
 
-  val p12 = Paragraph(List(a2, c2))
-  val p22 = Paragraph(List(f2))
-  val p32 = Paragraph(List(d2, e2, g2))
+  val p12 = Paragraph(Vector(a2, c2))
+  val p22 = Paragraph(Vector(f2))
+  val p32 = Paragraph(Vector(d2, e2, g2))
 
-  val doc1 = Document(List(p11, p21, p31))
+  val doc1 = Body(Vector(p11, p21, p31))
 
-  val doc2 = Document(List(p12, p22, p32))
+  val doc2 = Body(Vector(p12, p22, p32))
 
   test("compute matching") {
     val expected = Set(
-      (a1, a1.parent, a2, a2.parent),
-      (c1, c1.parent, c2, c2.parent),
-      (d1, d1.parent, d2, d2.parent),
-      (e1, e1.parent, e2, e2.parent),
-      (f1, f1.parent, f2, f2.parent),
-      (p11, p11.parent, p12, p12.parent),
-      (p21, p21.parent, p32, p32.parent),
-      (p31, p31.parent, p22, p22.parent),
-      (doc1, doc1.parent, doc2, doc2.parent)
+      (a1, a2),
+      (c1, c2),
+      (d1, d2),
+      (e1, e2),
+      (f1, f2),
+      (p11, p12),
+      (p21, p32),
+      (p31, p22)
     )
     val matcher = new LevenshteinMatcher(0.5, 0.5)
 
     val output = matcher.compute(doc1, doc2)
 
-    output.map { case (n1, n2) => (n1, n1.parent, n2, n2.parent) } should be(expected)
+    output should be(expected)
 
   }
 

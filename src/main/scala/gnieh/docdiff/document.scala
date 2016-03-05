@@ -15,164 +15,66 @@
 */
 package gnieh.docdiff
 
-sealed trait Node extends Ordered[Node] {
+import utils.TrieMap
 
-  protected[docdiff] var parent: Option[Node]
+import scala.annotation.tailrec
 
-  /** Indicates whether this node contains this sentence */
-  def contains(sentence: Sentence): Boolean
+final case class Document(metadata: TrieMap[String, Metadata], text: TextualConstituent)
 
-  /** Finds the first node (bottom-up looking) satisfying the predicate */
-  def find(f: Node => Boolean): Option[Node]
+sealed abstract class TextualConstituent {
+  val level: Int
+  val indentation: Int
+  val name: String
 
-  /** Returns the number of leaves for this node */
+  def find(p: TextualConstituent => Boolean): Option[TextualConstituent]
+
+  def contains(l: LeafConstituent): Boolean
+
   def size: Int
-
-  /** Returns the ordered list of node of type `lbl` in the same order they appear in the document */
-  def chain(lbl: Node): List[Node]
 
 }
 
-sealed abstract class InternalNode extends Node {
-  val children: List[Node]
+final case class InternalConstituent(level: Int, indentation: Int, name: String, children: Vector[TextualConstituent]) extends TextualConstituent {
 
-  children.foreach(_.parent = Some(this))
-
-  def find(f: Node => Boolean): Option[Node] = {
-    def aux(children: List[Node]): Option[Node] = children match {
-      case child :: tail =>
-        child.find(f).orElse(aux(tail))
-      case Nil =>
-        None
-    }
-    aux(children).orElse(if (f(this)) Some(this) else None)
+  def add(child: TextualConstituent): InternalConstituent = {
+    // a child must be either at the direct sub-level or at the direct next indentation
+    assert(child.level == this.level - 1 || child.indentation == this.indentation + 1)
+    copy(children = children :+ child)
   }
+
+  def find(f: TextualConstituent => Boolean): Option[TextualConstituent] = {
+    @tailrec
+    def aux(idx: Int): Option[TextualConstituent] =
+      if(idx >= children.size)
+        None
+      else
+        children(idx).find(f) match {
+          case None => aux(idx + 1)
+          case c    => c
+        }
+    aux(0).orElse(if (f(this)) Some(this) else None)
+  }
+
+  def contains(leaf: LeafConstituent) =
+    children.exists(_.contains(leaf))
 
   def size = children.map(_.size).sum
 
 }
 
-final case class Document(children: List[Node]) extends InternalNode {
-  protected[docdiff] var parent: Option[Node] = None
-  def compare(that: Node) = that match {
-    case Document(_) => 0
-    case _           => 1
-  }
+final case class LeafConstituent(level: Int, indentation: Int, name: String, content: String) extends TextualConstituent {
 
-  def contains(sentence: Sentence) =
-    children.exists(_.contains(sentence))
-
-  def chain(lbl: Node): List[Node] =
-    lbl match {
-      case Document(_) =>
-        this :: children.flatMap(_.chain(lbl))
-      case _ if lbl <= this =>
-        children.flatMap(_.chain(lbl))
-      case _ =>
-        Nil
-    }
-
-}
-
-final case class Title(level: Int, name: Sentence, children: List[Node]) extends InternalNode {
-
-  protected[docdiff] var parent: Option[Node] = None
-
-  def compare(that: Node) = that match {
-    case Title(thatLevel, _, _) => thatLevel - this.level
-    case Document(_)            => -1
-    case _                      => 1
-  }
-
-  def contains(sentence: Sentence) =
-    name == sentence || children.exists(_.contains(sentence))
-
-  def chain(lbl: Node): List[Node] =
-    lbl match {
-      case Title(lvl, _, _) if lvl == level =>
-        this :: children.flatMap(_.chain(lbl))
-      case _ if lbl <= this =>
-        children.flatMap(_.chain(lbl))
-      case _ =>
-        Nil
-    }
-
-}
-
-final case class Paragraph(children: List[Node]) extends InternalNode {
-
-  protected[docdiff] var parent: Option[Node] = None
-
-  def compare(that: Node) = that match {
-    case Paragraph(_)                   => 0
-    case Sentence(_) | Enumerated(_, _) => 1
-    case _                              => -1
-  }
-
-  def contains(sentence: Sentence) =
-    children.exists(_.contains(sentence))
-
-  def chain(lbl: Node): List[Node] =
-    lbl match {
-      case Paragraph(_) =>
-        this :: children.flatMap(_.chain(lbl))
-      case _ if lbl <= this =>
-        children.flatMap(_.chain(lbl))
-      case _ =>
-        Nil
-    }
-
-}
-
-final case class Enumerated(numbered: Boolean, children: List[Node]) extends InternalNode {
-
-  protected[docdiff] var parent: Option[Node] = None
-
-  def compare(that: Node) = that match {
-    case Enumerated(_, _) => 0
-    case Sentence(_)      => 1
-    case _                => -1
-  }
-
-  def contains(sentence: Sentence) =
-    children.exists(_.contains(sentence))
-
-  def chain(lbl: Node): List[Node] =
-    lbl match {
-      case Enumerated(_, _) =>
-        this :: children.flatMap(_.chain(lbl))
-      case _ if lbl <= this =>
-        children.flatMap(_.chain(lbl))
-      case _ =>
-        Nil
-    }
-
-}
-
-final case class Sentence(content: String) extends Node {
-
-  protected[docdiff] var parent: Option[Node] = None
-
-  def compare(that: Node) = that match {
-    case Sentence(_) => 0
-    case _           => -1
-  }
-
-  def contains(sentence: Sentence) =
-    sentence == this
-
-  def find(f: Node => Boolean): Option[Node] =
+  def find(f: TextualConstituent => Boolean): Option[TextualConstituent] =
     if (f(this))
       Some(this)
     else
       None
 
-  def size = 1
+  def contains(leaf: LeafConstituent) =
+    leaf == this
 
-  def chain(lbl: Node): List[Node] = lbl match {
-    case Sentence(_) => List(this)
-    case _           => Nil
-  }
+  val size = 1
 
 }
 
+trait Metadata
